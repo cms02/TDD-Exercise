@@ -3,12 +3,14 @@ package com.cms.atdd.membership.app.membership.controller;
 import com.cms.atdd.membership.app.common.GlobalExceptionHandler;
 import com.cms.atdd.membership.app.enums.MembershipType;
 import com.cms.atdd.membership.app.membership.dto.MembershipAddResponse;
+import com.cms.atdd.membership.app.membership.dto.MembershipDetailResponse;
 import com.cms.atdd.membership.app.membership.dto.MembershipRequest;
 import com.cms.atdd.membership.app.membership.entity.Membership;
 import com.cms.atdd.membership.app.membership.service.MembershipService;
 import com.cms.atdd.membership.exception.MembershipErrorResult;
 import com.cms.atdd.membership.exception.MembershipException;
 import com.google.gson.Gson;
+import org.apache.catalina.User;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +27,9 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import javax.xml.transform.Result;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static com.cms.atdd.membership.app.membership.constants.MembershipConstants.USER_ID_HEADER;
@@ -208,6 +212,93 @@ public class MembershipControllerTest {
 
         assertThat(response.getMembershipType()).isEqualTo(MembershipType.NAVER);
         assertThat(response.getId()).isNotNull();
+
+    }
+
+    @Test
+    public void 멤버쉽목록조회실패_사용자식별값이헤더에없음() throws Exception {
+        //given
+        final String url = "/api/v1/memberships";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.get(url)
+        );
+
+        //then
+        resultActions.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void 멤버쉽목록조회성공() throws Exception {
+        //given
+        final String url = "/api/v1/memberships";
+        doReturn(Arrays.asList(
+                MembershipDetailResponse.builder().build(),
+                MembershipDetailResponse.builder().build(),
+                MembershipDetailResponse.builder().build()
+        )).when(membershipService).getMembershipList("12345");
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.get(url)
+                        .header(USER_ID_HEADER, "12345")
+        );
+
+        //then
+        resultActions.andExpect(status().isOk());
+    }
+
+    @Test
+    public void 멤버쉽상세조회실패_사용자식별값이헤더에없음() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.get(url)
+        );
+
+        //then
+        resultActions.andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    public void 멤버쉽상세조회실패_멤버쉽이존재하지않음() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1";
+        doThrow(new MembershipException(MembershipErrorResult.MEMBERSHIP_NOT_FOUND))
+                .when(membershipService)
+                .getMembership(-1L, "12345");
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.get(url)
+                        .header(USER_ID_HEADER, "12345")
+        );
+
+        //then
+        resultActions.andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    public void 멤버쉽상세조회성공() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1";
+        doReturn(
+                MembershipDetailResponse.builder().build()
+        ).when(membershipService).getMembership(-1L, "12345");
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.get(url)
+                        .header(USER_ID_HEADER, "12345")
+        );
+
+        //then
+        resultActions.andExpect(status().isOk());
 
     }
 
