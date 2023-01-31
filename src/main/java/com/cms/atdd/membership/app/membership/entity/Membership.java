@@ -1,10 +1,7 @@
 package com.cms.atdd.membership.app.membership.entity;
 
 import com.cms.atdd.membership.app.enums.MembershipType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -31,6 +28,7 @@ public class Membership {
 
     @Column(nullable = false)
     @ColumnDefault("0")
+    @Setter
     private Integer point;
 
     @CreationTimestamp

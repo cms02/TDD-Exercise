@@ -5,13 +5,10 @@ import com.cms.atdd.membership.app.enums.MembershipType;
 import com.cms.atdd.membership.app.membership.dto.MembershipAddResponse;
 import com.cms.atdd.membership.app.membership.dto.MembershipDetailResponse;
 import com.cms.atdd.membership.app.membership.dto.MembershipRequest;
-import com.cms.atdd.membership.app.membership.entity.Membership;
 import com.cms.atdd.membership.app.membership.service.MembershipService;
 import com.cms.atdd.membership.exception.MembershipErrorResult;
 import com.cms.atdd.membership.exception.MembershipException;
 import com.google.gson.Gson;
-import org.apache.catalina.User;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +24,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import javax.xml.transform.Result;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -301,6 +297,92 @@ public class MembershipControllerTest {
         resultActions.andExpect(status().isOk());
 
     }
+
+    @Test
+    public void 멤버쉽삭제실패_사용자식별값이헤더에없음() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.delete(url)
+        );
+
+        //then
+        resultActions.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void 멤버쉽삭제성공() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.delete(url)
+                        .header(USER_ID_HEADER, "12345")
+        );
+
+        //then
+        resultActions.andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void 멤버쉽적립실패_사용자식별값이헤더에없음() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1/accumulate";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.post(url)
+                        .content(gson.toJson(membershipRequest(10000)))
+                        .contentType(MediaType.APPLICATION_JSON)
+        );
+
+        //then
+        resultActions.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void 멤버쉽적립실패_포인트가음수() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1/accumulate";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.post(url)
+                        .header(USER_ID_HEADER, "12345")
+                        .content(gson.toJson(membershipRequest(-1, MembershipType.NAVER)))
+                        .contentType(MediaType.APPLICATION_JSON)
+        );
+
+        //then
+        resultActions.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void 멤버쉽적립성공() throws Exception {
+        //given
+        final String url = "/api/v1/memberships/-1/accumulate";
+
+        //when
+        final ResultActions resultActions = mockMvc.perform(
+                MockMvcRequestBuilders.post(url)
+                        .header(USER_ID_HEADER, "12345")
+                        .content(gson.toJson(membershipRequest(10000)))
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        //then
+        resultActions.andExpect(status().isNoContent());
+    }
+
+
+    private MembershipRequest membershipRequest(final Integer point) {
+        return MembershipRequest.builder()
+                .point(point)
+                .build();
+    }
+
 
     private MembershipRequest membershipRequest(final Integer point, final MembershipType membershipType) {
         return MembershipRequest.builder()
